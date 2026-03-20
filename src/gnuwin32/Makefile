@@ -160,7 +160,7 @@ dllversion.o: ../include/Rversion.h
 
 ## Rdll.hide has decoration which 64-bit builds lack
 R.dll: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
-	@$(ECHO) EXPORTS > R.def
+	$(file >R.def,EXPORTS)
 	@$(NM) $^ | $(SED) -n  $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
 	@$(SED) -e's/@.*//' Rdll.hide | LC_COLLATE=C $(SORT) > R1.def
@@ -169,8 +169,8 @@ R.dll: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
 	@$(RM) R.def R0.def R1.def
 
 R.exp: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
-	@$(ECHO) LIBRARY R.dll > R.exp
-	@$(ECHO) EXPORTS >> R.exp
+	$(file >R.exp,LIBRARY R.dll)
+	$(file >>R.exp,EXPORTS)
 	@$(NM) $^ | $(SED) -n $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
 	@LC_COLLATE=C comm -23 R0.def Rdll.hide >> R.exp

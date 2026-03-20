@@ -29,8 +29,8 @@ endif
 
 ../../../modules$(R_ARCH)/internet.dll: internet.o libcurl.o sockconn.o Rhttpd.o Rsock.o sock.o dllversion.o
 	@$(MKDIR) -p ../../../modules$(R_ARCH)
-	@$(ECHO) "EXPORTS" > internet.def
-	@$(ECHO) " R_init_internet" >> internet.def
+	$(file >internet.def,EXPORTS)
+	$(file >>internet.def, R_init_internet)
 	$(DLL) -shared  -o $@ $^ internet.def -L../../../$(IMPDIR) -lR -lRgraphapp $(EXTRA_LIBS)
 	@$(RM) internet.def
 

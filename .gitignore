@@ -24,7 +24,7 @@ bin/
 lib/
 include/R_ext/
 library/
-modules/
+/modules/
 
 # etc generated files
 etc/Makeconf
