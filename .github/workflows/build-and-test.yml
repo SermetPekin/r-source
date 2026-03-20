@@ -205,6 +205,10 @@ jobs:
           printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
             "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVN-REVISION
 
+      - name: Install Windows config.h (src/include/config.h was a macOS artifact; use the committed fixed/h version)
+        shell: bash
+        run: cp src/gnuwin32/fixed/h/config.h src/include/config.h
+
       - name: Stub out texi-generated docs (texi2any 7.x rejects @table @pkg macro)
         shell: bash
         run: |
