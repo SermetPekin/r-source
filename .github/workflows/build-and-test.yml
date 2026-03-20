@@ -228,12 +228,13 @@ jobs:
         working-directory: src/gnuwin32
         run: |
           RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
-          # cygpath -w converts /c/rtools45/... → C:\rtools45\... (no spaces)
-          # GNU make on Windows requires a Windows-style path for SHELL;
-          # it also propagates SHELL to sub-makes via MAKEFLAGS.
-          BASH_WIN=$(cygpath -w "${RTOOLS}/usr/bin/bash.exe")
-          echo "Using SHELL: ${BASH_WIN}"
-          make -j1 SHELL="${BASH_WIN}" || {
+          # GNU make on Windows uses POSIX mode (-c) only when SHELL path has forward
+          # slashes (e.g. C:/rtools45/...). Backslash paths trigger Windows /C mode
+          # which breaks bash redirection in .def-file recipes.
+          # cygpath -m gives mixed style: drive letter + forward slashes, no spaces.
+          BASH_FWD=$(cygpath -m "${RTOOLS}/usr/bin/bash.exe")
+          echo "Using SHELL: ${BASH_FWD}"
+          make -j1 SHELL="${BASH_FWD}" || {
             echo "=== Build failed. Dumping Rgraphapp.def if it exists ==="
             cat ../extra/graphapp/Rgraphapp.def 2>/dev/null | head -10 || echo "(Rgraphapp.def not found)"
             exit 1
