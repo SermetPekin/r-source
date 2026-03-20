@@ -227,14 +227,13 @@ jobs:
         shell: bash
         run: |
           RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
-          # MkRules.local is automatically included by every Makefile in the
-          # Windows R build (see src/gnuwin32/Makefile ifeq wildcard check).
-          # Setting SHELL here propagates to all sub-makes including graphapp,
-          # ensuring echo/redirect in .def-file recipes run under bash not cmd.exe.
-          # Use mixed path (C:/...) so GNU make uses POSIX -c invocation mode.
           BASH=$(cygpath -m "${RTOOLS}/usr/bin/bash.exe")
-          echo "SHELL = ${BASH}" > src/gnuwin32/MkRules.local
-          echo "MkRules.local written:"
+          # SHELL: mixed path (C:/...) so GNU make uses POSIX -c mode
+          # ECHO: override to printf '%s\n' — MSYS2 bash 'echo' emits CRLF so
+          #   ld.exe sees "EXPORTS\r" and rejects it. printf '%s\n' emits pure LF.
+          printf 'SHELL = %s\n' "${BASH}" > src/gnuwin32/MkRules.local
+          printf "ECHO = printf '%%s\\n'\n" >> src/gnuwin32/MkRules.local
+          echo "--- MkRules.local ---"
           cat src/gnuwin32/MkRules.local
 
       - name: Build
