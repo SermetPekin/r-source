@@ -89,6 +89,7 @@ jobs:
           brew update
           brew install \
             gcc \
+            openblas \
             readline \
             pcre2 \
             openssl@3 \
@@ -128,8 +129,8 @@ jobs:
           GLIB_PFX=$(brew --prefix glib)
           GETTEXT_PFX=$(brew --prefix gettext)
           # PKG_CONFIG_PATH for keg-only packages
-          echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${PANGO_PFX}/lib/pkgconfig:${CAIRO_PFX}/lib/pkgconfig:${GLIB_PFX}/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
-          echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib -L${PANGO_PFX}/lib -L${CAIRO_PFX}/lib" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${BREW}/opt/openblas/lib/pkgconfig:${PANGO_PFX}/lib/pkgconfig:${CAIRO_PFX}/lib/pkgconfig:${GLIB_PFX}/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib -L${BREW}/opt/openblas/lib -L${PANGO_PFX}/lib -L${CAIRO_PFX}/lib" >> $GITHUB_ENV
           # -fno-canonical-system-headers prevents GCC from resolving symlinks in
           # .d dependency files (otherwise Cellar-versioned paths get baked in and break make)
           echo "CPPFLAGS=-fno-canonical-system-headers -I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
@@ -142,6 +143,7 @@ jobs:
 
       - name: Configure
         run: |
+          BREW=/opt/homebrew
           ./configure \
             --with-readline=yes \
             --with-pcre2 \
@@ -150,7 +152,7 @@ jobs:
             --without-aqua \
             --without-x \
             --without-recommended-packages \
-            --with-blas="-framework Accelerate" \
+            --with-blas="-L${BREW}/opt/openblas/lib -lopenblas" \
             --with-lapack
 
       - name: Build
