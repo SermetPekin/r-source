@@ -44,11 +44,10 @@ jobs:
 
       - name: Purge Homebrew from environment (prevent header contamination)
         run: |
-          # Remove any Homebrew paths from PATH so configure only sees system tools
+          # Homebrew is pre-installed on ubuntu-latest at /opt/homebrew and
+          # GCC finds its headers even when not in CPPFLAGS - rename it away
+          sudo mv /opt/homebrew /opt/homebrew.bak 2>/dev/null || true
           echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_ENV
-          # Clear any Homebrew-injected flags
-          echo "CPPFLAGS=-I/usr/include" >> $GITHUB_ENV
-          echo "LDFLAGS=-L/usr/lib/x86_64-linux-gnu" >> $GITHUB_ENV
           echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
 
       - name: Configure
