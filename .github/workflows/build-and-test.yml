@@ -148,11 +148,19 @@ jobs:
 
       - name: Install Rtools45
         shell: pwsh
-        run: choco install rtools --version=4.5.6550 -y --no-progress
+        run: |
+          $installed = choco list --local-only rtools | Select-String "rtools"
+          if (-not $installed) {
+            choco install rtools -y --no-progress
+          } else {
+            Write-Host "Rtools already installed: $installed"
+          }
 
       - name: Set up Rtools45 PATH
         run: |
-          RTOOLS=/c/rtools45
+          # Find whichever rtools4x directory exists
+          RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
+          echo "Using Rtools at: ${RTOOLS}"
           echo "${RTOOLS}/usr/bin"                                 >> $GITHUB_PATH
           echo "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin"    >> $GITHUB_PATH
           echo "RTOOLS_HOME=${RTOOLS}"                             >> $GITHUB_ENV
