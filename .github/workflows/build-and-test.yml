@@ -84,6 +84,11 @@ jobs:
       - name: Clean local build artifacts from repo
         run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.so" -o -name "*.dylib" \) -delete
 
+      - name: Select Xcode and accept license
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          sudo xcodebuild -license accept
+
       - name: Install dependencies
         run: |
           brew update
