@@ -167,21 +167,20 @@ jobs:
 
   build-windows:
     name: Build & Test (Windows)
-    if: false  # disabled while focusing on Linux
     runs-on: windows-latest
-
-    defaults:
-      run:
-        shell: bash   # use Git Bash so all commands are POSIX-style
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clean local build artifacts from repo
+        shell: bash
+        run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.dll" \) -delete
+
       - name: Install Rtools45
         shell: pwsh
         run: |
-          $installed = choco list --local-only rtools | Select-String "rtools"
+          $installed = choco list rtools 2>$null | Select-String "rtools"
           if (-not $installed) {
             choco install rtools -y --no-progress
           } else {
@@ -189,6 +188,7 @@ jobs:
           }
 
       - name: Set up Rtools45 PATH
+        shell: bash
         run: |
           # Find whichever rtools4x directory exists
           RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
@@ -196,20 +196,26 @@ jobs:
           echo "${RTOOLS}/usr/bin"                                 >> $GITHUB_PATH
           echo "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin"    >> $GITHUB_PATH
           echo "RTOOLS_HOME=${RTOOLS}"                             >> $GITHUB_ENV
+          # Verify gcc is available
+          ${RTOOLS}/usr/bin/gcc --version
 
       - name: Create SVN-REVISION (required for git clones)
+        shell: bash
         run: |
           printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
             "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVN-REVISION
 
       - name: Build
+        shell: bash
         working-directory: src/gnuwin32
         run: make -j$NUMBER_OF_PROCESSORS
 
       - name: Verify R binary
+        shell: bash
         run: bin/x64/Rscript --version
 
       - name: Run tests
+        shell: bash
         working-directory: src/gnuwin32
         run: make check
         timeout-minutes: 60
