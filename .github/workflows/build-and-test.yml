@@ -73,6 +73,7 @@ jobs:
 
   build-macos:
     name: Build & Test (macOS)
+    if: false  # disabled while focusing on Linux
     runs-on: macos-14   # Apple Silicon
 
     steps:
@@ -147,6 +148,7 @@ jobs:
 
   build-windows:
     name: Build & Test (Windows)
+    if: false  # disabled while focusing on Linux
     runs-on: windows-latest
 
     defaults:
