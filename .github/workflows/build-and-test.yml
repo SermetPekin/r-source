@@ -42,6 +42,9 @@ jobs:
           printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
             "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVNINFO
 
+      - name: Clean local build artifacts from repo
+        run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.so" \) -delete
+
       - name: Purge Homebrew from environment (prevent header contamination)
         run: |
           # Homebrew is pre-installed on ubuntu-latest at /opt/homebrew and
