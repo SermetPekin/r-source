@@ -50,7 +50,9 @@ jobs:
             --with-cairo \
             --with-libpng \
             --without-x \
-            --without-recommended-packages
+            --without-recommended-packages \
+            CPPFLAGS="-I/usr/include" \
+            LDFLAGS="-L/usr/lib/x86_64-linux-gnu"
 
       - name: Build
         run: make -j$(nproc)
