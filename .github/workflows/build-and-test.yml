@@ -196,8 +196,8 @@ jobs:
           echo "${RTOOLS}/usr/bin"                                 >> $GITHUB_PATH
           echo "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin"    >> $GITHUB_PATH
           echo "RTOOLS_HOME=${RTOOLS}"                             >> $GITHUB_ENV
-          # Verify gcc is available
-          ${RTOOLS}/usr/bin/gcc --version
+          # Verify gcc is available (gcc lives in the cross-compiler bin, not usr/bin)
+          "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin/gcc" --version
 
       - name: Create SVN-REVISION (required for git clones)
         shell: bash
