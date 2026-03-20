@@ -81,6 +81,8 @@ jobs:
             libpng \
             cairo \
             pango \
+            glib \
+            gettext \
             xz \
             jpeg-turbo \
             libtiff \
@@ -95,10 +97,15 @@ jobs:
           GCC_VER=$(ls ${BREW}/bin/gfortran-* 2>/dev/null | grep -oE '[0-9]+$' | sort -n | tail -1)
           echo "FC=${BREW}/bin/gfortran-${GCC_VER}" >> $GITHUB_ENV
           echo "F77=${BREW}/bin/gfortran-${GCC_VER}" >> $GITHUB_ENV
-          # Make keg-only packages visible to pkg-config
-          echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
-          echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include" >> $GITHUB_ENV
+          # Use stable brew --prefix symlink paths (not versioned Cellar paths)
+          PANGO_PFX=$(brew --prefix pango)
+          CAIRO_PFX=$(brew --prefix cairo)
+          GLIB_PFX=$(brew --prefix glib)
+          GETTEXT_PFX=$(brew --prefix gettext)
+          # PKG_CONFIG_PATH for keg-only packages
+          echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${PANGO_PFX}/lib/pkgconfig:${CAIRO_PFX}/lib/pkgconfig:${GLIB_PFX}/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib -L${PANGO_PFX}/lib -L${CAIRO_PFX}/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
           echo "${BREW}/bin" >> $GITHUB_PATH
 
       - name: Create SVNINFO (required for git clones)
