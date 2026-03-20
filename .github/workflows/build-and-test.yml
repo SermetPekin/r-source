@@ -81,6 +81,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clean local build artifacts from repo
+        run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.so" -o -name "*.dylib" \) -delete
+
       - name: Install dependencies
         run: |
           brew update
@@ -131,6 +134,8 @@ jobs:
       - name: Configure
         run: |
           ./configure \
+            CC=clang \
+            CXX=clang++ \
             --with-readline=yes \
             --with-pcre2 \
             --with-cairo \
