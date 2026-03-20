@@ -226,7 +226,14 @@ jobs:
       - name: Build
         shell: bash
         working-directory: src/gnuwin32
-        run: make -j$NUMBER_OF_PROCESSORS
+        run: |
+          # Serial build (-j1) to avoid race conditions in .def file generation
+          # (parallel make can start linking Rgraphapp.dll before nm|sed|comm finishes writing Rgraphapp.def)
+          make -j1 || {
+            echo "=== Build failed. Dumping Rgraphapp.def if it exists ==="
+            cat ../extra/graphapp/Rgraphapp.def 2>/dev/null || echo "(Rgraphapp.def not found)"
+            exit 1
+          }
 
       - name: Verify R binary
         shell: bash
