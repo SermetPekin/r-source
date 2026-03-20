@@ -227,9 +227,10 @@ jobs:
         shell: bash
         working-directory: src/gnuwin32
         run: |
-          # Serial build (-j1) to avoid race conditions in .def file generation
-          # (parallel make can start linking Rgraphapp.dll before nm|sed|comm finishes writing Rgraphapp.def)
-          make -j1 || {
+          # Force make to use bash (not cmd.exe) so that echo/redirect in recipes work correctly.
+          # Without this, GNU make on Windows defaults to cmd.exe and @$(ECHO) EXPORTS > file fails silently.
+          BASH_PATH=$(cygpath -w "$(which bash)")
+          make -j1 SHELL="$BASH_PATH" || {
             echo "=== Build failed. Dumping Rgraphapp.def if it exists ==="
             cat ../extra/graphapp/Rgraphapp.def 2>/dev/null || echo "(Rgraphapp.def not found)"
             exit 1
