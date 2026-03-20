@@ -77,7 +77,7 @@ jobs:
             gcc \
             readline \
             pcre2 \
-            openssl \
+            openssl@3 \
             libpng \
             cairo \
             pango \
@@ -88,6 +88,18 @@ jobs:
             icu4c \
             pkg-config \
             texinfo
+
+      - name: Set up Homebrew environment
+        run: |
+          BREW=/opt/homebrew
+          GCC_VER=$(ls ${BREW}/bin/gfortran-* 2>/dev/null | grep -oE '[0-9]+$' | sort -n | tail -1)
+          echo "FC=${BREW}/bin/gfortran-${GCC_VER}" >> $GITHUB_ENV
+          echo "F77=${BREW}/bin/gfortran-${GCC_VER}" >> $GITHUB_ENV
+          # Make keg-only packages visible to pkg-config
+          echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include" >> $GITHUB_ENV
+          echo "${BREW}/bin" >> $GITHUB_PATH
 
       - name: Create SVNINFO (required for git clones)
         run: |
@@ -103,9 +115,7 @@ jobs:
             --with-libpng \
             --without-aqua \
             --without-x \
-            --without-recommended-packages \
-            LDFLAGS="-L/opt/homebrew/lib" \
-            CPPFLAGS="-I/opt/homebrew/include"
+            --without-recommended-packages
 
       - name: Build
         run: make -j$(sysctl -n hw.logicalcpu)
