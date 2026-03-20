@@ -149,7 +149,9 @@ jobs:
             --with-libpng \
             --without-aqua \
             --without-x \
-            --without-recommended-packages
+            --without-recommended-packages \
+            --with-blas="-framework Accelerate" \
+            --with-lapack
 
       - name: Build
         run: make -j$(sysctl -n hw.logicalcpu)
