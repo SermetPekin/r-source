@@ -232,6 +232,7 @@ SORT=sort
 %.dll:
 	$(file >$*.def,EXPORTS)
 	@$(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER) >> $*.def
+	@$(SED) -i 's/\r$$//' $*.def
 	$(DLL) -shared $(DLLFLAGS) $($*-DLLFLAGS) -o $@ $*.def $^ $($*-DLLLIBS) $(DLLLIBS)
 	@$(RM) $*.def
 

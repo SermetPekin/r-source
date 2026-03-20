@@ -29,6 +29,7 @@ Rgraphapp.def: $(OBJECTS)
 	$(file >$@,EXPORTS)
 	@$(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER) | $(SED) -e 's/@16//' | LC_COLLATE=C $(SORT) | uniq > g.def
 	@LC_COLLATE=C comm -23 g.def ga.hide >> $@
+	@$(SED) -i 's/\r$$//' $@
 	@$(RM) g.def
 
 Rgraphapp.dll: $(OBJECTS) dllversion.o Rgraphapp.def
