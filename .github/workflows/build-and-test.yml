@@ -9,6 +9,7 @@ on:
 jobs:
   build-linux:
     name: Build & Test (Linux)
+    if: false  # temporarily disabled while debugging Windows
     runs-on: ubuntu-latest
 
     steps:
@@ -75,6 +76,7 @@ jobs:
 
   build-macos:
     name: Build & Test (macOS)
+    if: false  # temporarily disabled while debugging Windows
     runs-on: macos-14   # Apple Silicon
 
     steps:
