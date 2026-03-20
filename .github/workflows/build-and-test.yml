@@ -227,10 +227,11 @@ jobs:
         shell: bash
         working-directory: src/gnuwin32
         run: |
-          # Force make to use bash (not cmd.exe) so that echo/redirect in recipes work correctly.
-          # Without this, GNU make on Windows defaults to cmd.exe and @$(ECHO) EXPORTS > file fails silently.
-          BASH_PATH=$(cygpath -w "$(which bash)")
-          make -j1 SHELL="$BASH_PATH" || {
+          # Use Rtools bash (no spaces in path) as make's SHELL so that
+          # echo/redirect in .def file recipes work correctly instead of cmd.exe.
+          RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
+          BASH="${RTOOLS}/usr/bin/bash.exe"
+          make -j1 SHELL="${BASH}" || {
             echo "=== Build failed. Dumping Rgraphapp.def if it exists ==="
             cat ../extra/graphapp/Rgraphapp.def 2>/dev/null || echo "(Rgraphapp.def not found)"
             exit 1
