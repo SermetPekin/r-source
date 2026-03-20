@@ -11,6 +11,7 @@
 Makeconf
 config.log
 src/include/config.h
+src/gnuwin32/MkRules.local
 config.status
 libtool
 SVNINFO

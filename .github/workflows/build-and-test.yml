@@ -223,18 +223,25 @@ jobs:
           printf '<html></html>\n' > doc/html/resources.html
           touch -t 203001010000 doc/FAQ doc/RESOURCES doc/html/resources.html
 
+      - name: Create MkRules.local (set SHELL so all sub-makes use bash for .def generation)
+        shell: bash
+        run: |
+          RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
+          # MkRules.local is automatically included by every Makefile in the
+          # Windows R build (see src/gnuwin32/Makefile ifeq wildcard check).
+          # Setting SHELL here propagates to all sub-makes including graphapp,
+          # ensuring echo/redirect in .def-file recipes run under bash not cmd.exe.
+          # Use mixed path (C:/...) so GNU make uses POSIX -c invocation mode.
+          BASH=$(cygpath -m "${RTOOLS}/usr/bin/bash.exe")
+          echo "SHELL = ${BASH}" > src/gnuwin32/MkRules.local
+          echo "MkRules.local written:"
+          cat src/gnuwin32/MkRules.local
+
       - name: Build
         shell: bash
         working-directory: src/gnuwin32
         run: |
-          RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
-          # GNU make on Windows uses POSIX mode (-c) only when SHELL path has forward
-          # slashes (e.g. C:/rtools45/...). Backslash paths trigger Windows /C mode
-          # which breaks bash redirection in .def-file recipes.
-          # cygpath -m gives mixed style: drive letter + forward slashes, no spaces.
-          BASH_FWD=$(cygpath -m "${RTOOLS}/usr/bin/bash.exe")
-          echo "Using SHELL: ${BASH_FWD}"
-          make -j1 SHELL="${BASH_FWD}" || {
+          make -j1 || {
             echo "=== Build failed. Dumping Rgraphapp.def if it exists ==="
             cat ../extra/graphapp/Rgraphapp.def 2>/dev/null | head -10 || echo "(Rgraphapp.def not found)"
             exit 1
