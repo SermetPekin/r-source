@@ -227,13 +227,15 @@ jobs:
         shell: bash
         working-directory: src/gnuwin32
         run: |
-          # Use Rtools bash (no spaces in path) as make's SHELL so that
-          # echo/redirect in .def file recipes work correctly instead of cmd.exe.
           RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
-          BASH="${RTOOLS}/usr/bin/bash.exe"
-          make -j1 SHELL="${BASH}" || {
+          # cygpath -w converts /c/rtools45/... → C:\rtools45\... (no spaces)
+          # GNU make on Windows requires a Windows-style path for SHELL;
+          # it also propagates SHELL to sub-makes via MAKEFLAGS.
+          BASH_WIN=$(cygpath -w "${RTOOLS}/usr/bin/bash.exe")
+          echo "Using SHELL: ${BASH_WIN}"
+          make -j1 SHELL="${BASH_WIN}" || {
             echo "=== Build failed. Dumping Rgraphapp.def if it exists ==="
-            cat ../extra/graphapp/Rgraphapp.def 2>/dev/null || echo "(Rgraphapp.def not found)"
+            cat ../extra/graphapp/Rgraphapp.def 2>/dev/null | head -10 || echo "(Rgraphapp.def not found)"
             exit 1
           }
 
