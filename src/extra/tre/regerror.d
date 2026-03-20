@@ -1,0 +1,3 @@
+regerror.o: regerror.c ../../../src/include/config.h tre-internal.h tre.h \
+  tre-config.h ../../../src/include/rlocale.h \
+  /opt/homebrew/include/libintl.h
