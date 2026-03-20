@@ -126,3 +126,43 @@ jobs:
       - name: Run tests
         run: make check
         timeout-minutes: 60
+
+  build-windows:
+    name: Build & Test (Windows)
+    runs-on: windows-latest
+
+    defaults:
+      run:
+        shell: bash   # use Git Bash so all commands are POSIX-style
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Rtools45
+        shell: pwsh
+        run: choco install rtools --version=4.5.6550 -y --no-progress
+
+      - name: Set up Rtools45 PATH
+        run: |
+          RTOOLS=/c/rtools45
+          echo "${RTOOLS}/usr/bin"                                 >> $GITHUB_PATH
+          echo "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin"    >> $GITHUB_PATH
+          echo "RTOOLS_HOME=${RTOOLS}"                             >> $GITHUB_ENV
+
+      - name: Create SVN-REVISION (required for git clones)
+        run: |
+          printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVN-REVISION
+
+      - name: Build
+        working-directory: src/gnuwin32
+        run: make -j$NUMBER_OF_PROCESSORS
+
+      - name: Verify R binary
+        run: bin/x64/Rscript --version
+
+      - name: Run tests
+        working-directory: src/gnuwin32
+        run: make check
+        timeout-minutes: 60
