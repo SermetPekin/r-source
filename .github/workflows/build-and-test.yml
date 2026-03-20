@@ -42,6 +42,15 @@ jobs:
           printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
             "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVNINFO
 
+      - name: Purge Homebrew from environment (prevent header contamination)
+        run: |
+          # Remove any Homebrew paths from PATH so configure only sees system tools
+          echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_ENV
+          # Clear any Homebrew-injected flags
+          echo "CPPFLAGS=-I/usr/include" >> $GITHUB_ENV
+          echo "LDFLAGS=-L/usr/lib/x86_64-linux-gnu" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+
       - name: Configure
         run: |
           ./configure \
@@ -50,9 +59,7 @@ jobs:
             --with-cairo \
             --with-libpng \
             --without-x \
-            --without-recommended-packages \
-            CPPFLAGS="-I/usr/include" \
-            LDFLAGS="-L/usr/lib/x86_64-linux-gnu"
+            --without-recommended-packages
 
       - name: Build
         run: make -j$(nproc)
@@ -107,7 +114,9 @@ jobs:
           # PKG_CONFIG_PATH for keg-only packages
           echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${PANGO_PFX}/lib/pkgconfig:${CAIRO_PFX}/lib/pkgconfig:${GLIB_PFX}/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
           echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib -L${PANGO_PFX}/lib -L${CAIRO_PFX}/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
+          # -fno-canonical-system-headers prevents GCC from resolving symlinks in
+          # .d dependency files (otherwise Cellar-versioned paths get baked in and break make)
+          echo "CPPFLAGS=-fno-canonical-system-headers -I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
           echo "${BREW}/bin" >> $GITHUB_PATH
 
       - name: Create SVNINFO (required for git clones)
