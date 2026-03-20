@@ -73,7 +73,6 @@ jobs:
 
   build-macos:
     name: Build & Test (macOS)
-    if: false  # disabled while focusing on Linux
     runs-on: macos-14   # Apple Silicon
 
     steps:
@@ -105,8 +104,10 @@ jobs:
         run: |
           BREW=/opt/homebrew
           GCC_VER=$(ls ${BREW}/bin/gfortran-* 2>/dev/null | grep -oE '[0-9]+$' | sort -n | tail -1)
-          echo "FC=${BREW}/bin/gfortran-${GCC_VER}" >> $GITHUB_ENV
-          echo "F77=${BREW}/bin/gfortran-${GCC_VER}" >> $GITHUB_ENV
+          # Create an unversioned gfortran symlink so configure can find it by name
+          ln -sf ${BREW}/bin/gfortran-${GCC_VER} ${BREW}/bin/gfortran
+          echo "FC=${BREW}/bin/gfortran" >> $GITHUB_ENV
+          echo "F77=${BREW}/bin/gfortran" >> $GITHUB_ENV
           # Use stable brew --prefix symlink paths (not versioned Cellar paths)
           PANGO_PFX=$(brew --prefix pango)
           CAIRO_PFX=$(brew --prefix cairo)
