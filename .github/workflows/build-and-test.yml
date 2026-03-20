@@ -223,16 +223,13 @@ jobs:
           printf '<html></html>\n' > doc/html/resources.html
           touch -t 203001010000 doc/FAQ doc/RESOURCES doc/html/resources.html
 
-      - name: Create MkRules.local (set SHELL so all sub-makes use bash for .def generation)
+      - name: Create MkRules.local (set SHELL for all sub-makes)
         shell: bash
         run: |
           RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
           BASH=$(cygpath -m "${RTOOLS}/usr/bin/bash.exe")
-          # SHELL: mixed path (C:/...) so GNU make uses POSIX -c mode
-          # ECHO: override to printf '%s\n' — MSYS2 bash 'echo' emits CRLF so
-          #   ld.exe sees "EXPORTS\r" and rejects it. printf '%s\n' emits pure LF.
+          # Mixed path (C:/...) so GNU make uses POSIX -c mode not Windows /C mode.
           printf 'SHELL = %s\n' "${BASH}" > src/gnuwin32/MkRules.local
-          printf "ECHO = printf '%%s\\n'\n" >> src/gnuwin32/MkRules.local
           echo "--- MkRules.local ---"
           cat src/gnuwin32/MkRules.local
 
