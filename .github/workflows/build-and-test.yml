@@ -1,0 +1,118 @@
+name: Build and Test R
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build-linux:
+    name: Build & Test (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            build-essential \
+            gfortran \
+            libreadline-dev \
+            libpcre2-dev \
+            libcurl4-openssl-dev \
+            libcairo2-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff5-dev \
+            zlib1g-dev \
+            libbz2-dev \
+            liblzma-dev \
+            libdeflate-dev \
+            libicu-dev \
+            texinfo \
+            wget \
+            pkg-config
+
+      - name: Create SVNINFO (required for git clones)
+        run: |
+          printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVNINFO
+
+      - name: Configure
+        run: |
+          ./configure \
+            --with-readline=yes \
+            --with-pcre2 \
+            --with-cairo \
+            --with-libpng \
+            --without-x \
+            --without-recommended-packages
+
+      - name: Build
+        run: make -j$(nproc)
+
+      - name: Verify R binary
+        run: bin/R --version
+
+      - name: Run tests
+        run: make check
+        timeout-minutes: 60
+
+  build-macos:
+    name: Build & Test (macOS)
+    runs-on: macos-14   # Apple Silicon
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install \
+            gcc \
+            readline \
+            pcre2 \
+            openssl \
+            libpng \
+            cairo \
+            pango \
+            xz \
+            jpeg-turbo \
+            libtiff \
+            libdeflate \
+            icu4c \
+            pkg-config \
+            texinfo
+
+      - name: Create SVNINFO (required for git clones)
+        run: |
+          printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVNINFO
+
+      - name: Configure
+        run: |
+          ./configure \
+            --with-readline=yes \
+            --with-pcre2 \
+            --with-cairo \
+            --with-libpng \
+            --without-aqua \
+            --without-x \
+            --without-recommended-packages \
+            LDFLAGS="-L/opt/homebrew/lib" \
+            CPPFLAGS="-I/opt/homebrew/include"
+
+      - name: Build
+        run: make -j$(sysctl -n hw.logicalcpu)
+
+      - name: Verify R binary
+        run: bin/R --version
+
+      - name: Run tests
+        run: make check
+        timeout-minutes: 60
