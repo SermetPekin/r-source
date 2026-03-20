@@ -88,6 +88,8 @@ jobs:
         run: |
           sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
           sudo xcodebuild -license accept
+          # Set SDKROOT so clang can find SDK headers after brew install gcc
+          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
 
       - name: Install dependencies
         run: |
@@ -130,6 +132,8 @@ jobs:
           # .d dependency files (otherwise Cellar-versioned paths get baked in and break make)
           echo "CPPFLAGS=-fno-canonical-system-headers -I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
           echo "${BREW}/bin" >> $GITHUB_PATH
+          # Re-set SDKROOT after brew install (brew install gcc can displace it)
+          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
 
       - name: Create SVNINFO (required for git clones)
         run: |
