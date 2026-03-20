@@ -84,13 +84,6 @@ jobs:
       - name: Clean local build artifacts from repo
         run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.so" -o -name "*.dylib" \) -delete
 
-      - name: Select Xcode and accept license
-        run: |
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-          sudo xcodebuild -license accept
-          # Set SDKROOT so clang can find SDK headers after brew install gcc
-          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
-
       - name: Install dependencies
         run: |
           brew update
@@ -112,14 +105,23 @@ jobs:
             pkg-config \
             texinfo
 
+      - name: Restore Xcode after brew (brew install gcc resets xcode-select)
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
+
       - name: Set up Homebrew environment
         run: |
           BREW=/opt/homebrew
           GCC_VER=$(ls ${BREW}/bin/gfortran-* 2>/dev/null | grep -oE '[0-9]+$' | sort -n | tail -1)
-          # Create an unversioned gfortran symlink so configure can find it by name
+          # Create unversioned symlinks for gcc/g++/gfortran so configure finds them
           ln -sf ${BREW}/bin/gfortran-${GCC_VER} ${BREW}/bin/gfortran
+          ln -sf ${BREW}/bin/gcc-${GCC_VER} ${BREW}/bin/gcc
+          ln -sf ${BREW}/bin/g++-${GCC_VER} ${BREW}/bin/g++
           echo "FC=${BREW}/bin/gfortran" >> $GITHUB_ENV
           echo "F77=${BREW}/bin/gfortran" >> $GITHUB_ENV
+          echo "CC=${BREW}/bin/gcc" >> $GITHUB_ENV
+          echo "CXX=${BREW}/bin/g++" >> $GITHUB_ENV
           # Use stable brew --prefix symlink paths (not versioned Cellar paths)
           PANGO_PFX=$(brew --prefix pango)
           CAIRO_PFX=$(brew --prefix cairo)
@@ -132,8 +134,6 @@ jobs:
           # .d dependency files (otherwise Cellar-versioned paths get baked in and break make)
           echo "CPPFLAGS=-fno-canonical-system-headers -I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
           echo "${BREW}/bin" >> $GITHUB_PATH
-          # Re-set SDKROOT after brew install (brew install gcc can displace it)
-          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
 
       - name: Create SVNINFO (required for git clones)
         run: |
@@ -143,8 +143,6 @@ jobs:
       - name: Configure
         run: |
           ./configure \
-            CC=clang \
-            CXX=clang++ \
             --with-readline=yes \
             --with-pcre2 \
             --with-cairo \
