@@ -227,8 +227,7 @@ jobs:
         run: |
           make -j$NUMBER_OF_PROCESSORS || {
             echo "DUMPING Rgraphapp.def"
-            cat -A ../extra/graphapp/Rgraphapp.def || true
-            hexdump -C ../extra/graphapp/Rgraphapp.def || true
+            python -c "import sys; sys.stdout.write(repr(open('../extra/graphapp/Rgraphapp.def', 'rb').read(100)) + '\n')" || true
             exit 1
           }
 
