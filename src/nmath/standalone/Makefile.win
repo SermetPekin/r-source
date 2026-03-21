@@ -104,7 +104,8 @@ DEPENDS = $(SOURCES_NMATH:.c=.d)
 
 libRmath.a: sunif.o $(SOURCES_NMATH:.c=.o)
 Rmath.def: sunif.o $(SOURCES_NMATH:.c=.o)
-	@{ printf 'EXPORTS\n'; $(NM) $^ | $(SED) -n $(SYMPAT); } | tr -d '\r' > $@
+	@$(file >$@,EXPORTS)
+	@$(NM) $^ | $(SED) -n $(SYMPAT) | tr -d '\r' >> $@
 Rmath.dll: libRmath.a Rmath.def
 	$(DLL) $(DLLFLAGS) --shared -o $@ Rmath.def $^
 libRmath.dll.a: Rmath.def

@@ -40,7 +40,7 @@ implib: libRlapack.dll.a
 libRlapack.dll.a: Rlapack.def
 
 Rlapack.def: $(LIBOBJECTS)
-	@printf 'EXPORTS\n' | tr -d '\r' > $@
+	@$(file >$@,EXPORTS)
 
 
 $(MODULE).dll: $(OBJS)

@@ -163,14 +163,17 @@ R.dll: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
 	@$(NM) $^ | $(SED) -n  $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
 	@$(SED) -e's/@.*//' Rdll.hide | LC_COLLATE=C $(SORT) > R1.def
-	@{ printf 'EXPORTS\n'; LC_COLLATE=C comm -23 R0.def R1.def; } | tr -d '\r' > R.def
+	@$(file >R.def,EXPORTS)
+	@LC_COLLATE=C comm -23 R0.def R1.def | tr -d '\r' >> R.def
 	$(DLL) -shared $(DLLFLAGS) $($*-DLLFLAGS) -o $@ R.def $^ $($*-DLLLIBS) $(DLLLIBS)
 	@$(RM) R.def R0.def R1.def
 
 R.exp: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
 	@$(NM) $^ | $(SED) -n $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
-	@{ printf 'LIBRARY R.dll\nEXPORTS\n'; LC_COLLATE=C comm -23 R0.def Rdll.hide; } | tr -d '\r' > R.exp
+	@$(file >R.exp,LIBRARY R.dll)
+	@$(file >>R.exp,EXPORTS)
+	@LC_COLLATE=C comm -23 R0.def Rdll.hide | tr -d '\r' >> R.exp
 	@$(RM) R0.def
 
 
