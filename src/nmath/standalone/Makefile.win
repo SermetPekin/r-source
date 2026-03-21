@@ -104,8 +104,9 @@ DEPENDS = $(SOURCES_NMATH:.c=.d)
 
 libRmath.a: sunif.o $(SOURCES_NMATH:.c=.o)
 Rmath.def: sunif.o $(SOURCES_NMATH:.c=.o)
-	@$(file >$@,EXPORTS)
-	@$(NM) $^ | $(SED) -n $(SYMPAT) | tr -d '\r' >> $@
+	@$(NM) $^ | $(SED) -n $(SYMPAT) > Rmath.sym
+	@python -c "open('$@','wb').write(b'LIBRARY Rmath.dll\nEXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('Rmath.sym','rb') if x.strip() and not x.startswith(b'.')))"
+	@$(RM) Rmath.sym
 Rmath.dll: libRmath.a Rmath.def
 	$(DLL) $(DLLFLAGS) --shared -o $@ Rmath.def $^
 libRmath.dll.a: Rmath.def

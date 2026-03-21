@@ -230,10 +230,10 @@ SORT=sort
 ## It does little sense to have $($*-DLLFLAGS) here (and not in etc/Makeconf)
 ## $($*-DLLLIBS) is used for R and lapack
 %.dll:
-	@$(file >$*.def,EXPORTS)
-	@$(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER) | tr -d '\r' >> $*.def
+	@$(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER) > $*.sym
+	@python -c "open('$*.def','wb').write(b'EXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('$*.sym','rb') if x.strip() and not x.startswith(b'.')))"
 	$(DLL) -shared $(DLLFLAGS) $($*-DLLFLAGS) -o $@ $*.def $^ $($*-DLLLIBS) $(DLLLIBS)
-	@$(RM) $*.def
+	@$(RM) $*.def $*.sym
 
 ## It does no sense to have $($*-DLLTOOLFLAGS) here, and it is unused.
 lib%.dll.a: %.def

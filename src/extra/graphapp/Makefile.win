@@ -27,8 +27,7 @@ libRgraphapp.dll.a: Rgraphapp.def
 ## MinGW symbols have trailing @, MinGW-w64 do not
 Rgraphapp.def: $(OBJECTS)
 	@$(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER) | $(SED) -e 's/@16//' | LC_COLLATE=C $(SORT) | uniq > g.def
-	@$(file >$@,EXPORTS)
-	@LC_COLLATE=C comm -23 g.def ga.hide | tr -d '\r' >> $@
+	@python -c "import os; h=set(x.strip() for x in open('ga.hide','rb')) if os.path.exists('ga.hide') else set(); open('$@','wb').write(b'LIBRARY Rgraphapp.dll\nEXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('g.def','rb') if x.strip() and x.strip() not in h and not x.startswith(b'.')))"
 	@$(RM) g.def
 
 Rgraphapp.dll: $(OBJECTS) dllversion.o Rgraphapp.def

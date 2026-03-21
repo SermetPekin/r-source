@@ -40,7 +40,7 @@ implib: libRlapack.dll.a
 libRlapack.dll.a: Rlapack.def
 
 Rlapack.def: $(LIBOBJECTS)
-	@$(file >$@,EXPORTS)
+	@python -c "open('$@','wb').write(b'EXPORTS\n')"
 
 
 $(MODULE).dll: $(OBJS)
