@@ -160,20 +160,17 @@ dllversion.o: ../include/Rversion.h
 
 ## Rdll.hide has decoration which 64-bit builds lack
 R.dll: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
-	@printf 'EXPORTS\n' > R.def
 	@$(NM) $^ | $(SED) -n  $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
 	@$(SED) -e's/@.*//' Rdll.hide | LC_COLLATE=C $(SORT) > R1.def
-	@LC_COLLATE=C comm -23 R0.def R1.def | $(SED) 's/\r$$//' >> R.def
+	@{ printf 'EXPORTS\n'; LC_COLLATE=C comm -23 R0.def R1.def; } | tr -d '\r' > R.def
 	$(DLL) -shared $(DLLFLAGS) $($*-DLLFLAGS) -o $@ R.def $^ $($*-DLLLIBS) $(DLLLIBS)
 	@$(RM) R.def R0.def R1.def
 
 R.exp: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
-	@printf 'LIBRARY R.dll\n' > R.exp
-	@printf 'EXPORTS\n' >> R.exp
 	@$(NM) $^ | $(SED) -n $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
-	@LC_COLLATE=C comm -23 R0.def Rdll.hide | $(SED) 's/\r$$//' >> R.exp
+	@{ printf 'LIBRARY R.dll\nEXPORTS\n'; LC_COLLATE=C comm -23 R0.def Rdll.hide; } | tr -d '\r' > R.exp
 	@$(RM) R0.def
 
 

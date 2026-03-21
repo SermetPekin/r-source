@@ -230,8 +230,7 @@ SORT=sort
 ## It does little sense to have $($*-DLLFLAGS) here (and not in etc/Makeconf)
 ## $($*-DLLLIBS) is used for R and lapack
 %.dll:
-	@printf 'EXPORTS\n' > $*.def
-	@$(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER) | $(SED) 's/\r$$//' >> $*.def
+	@{ printf 'EXPORTS\n'; $(NM) $^ | $(SED) -n $(SYMPAT) $(NM_FILTER); } | tr -d '\r' > $*.def
 	$(DLL) -shared $(DLLFLAGS) $($*-DLLFLAGS) -o $@ $*.def $^ $($*-DLLLIBS) $(DLLLIBS)
 	@$(RM) $*.def
 
