@@ -224,7 +224,13 @@ jobs:
       - name: Build
         shell: bash
         working-directory: src/gnuwin32
-        run: make -j$NUMBER_OF_PROCESSORS
+        run: |
+          make -j$NUMBER_OF_PROCESSORS || {
+            echo "DUMPING Rgraphapp.def"
+            cat -A ../extra/graphapp/Rgraphapp.def || true
+            hexdump -C ../extra/graphapp/Rgraphapp.def || true
+            exit 1
+          }
 
       - name: Verify R binary
         shell: bash
