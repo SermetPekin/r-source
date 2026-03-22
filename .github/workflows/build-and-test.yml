@@ -225,7 +225,7 @@ jobs:
         shell: bash
         working-directory: src/gnuwin32
         run: |
-          make -j$NUMBER_OF_PROCESSORS || {
+          make MAKE=make -j$NUMBER_OF_PROCESSORS || {
             echo "DUMPING Rgraphapp.def"
             python -c "import sys; sys.stdout.write(repr(open('../extra/graphapp/Rgraphapp.def', 'rb').read(100)) + '\n')" || true
             exit 1
@@ -238,5 +238,5 @@ jobs:
       - name: Run tests
         shell: bash
         working-directory: src/gnuwin32
-        run: make check
+        run: make MAKE=make check
         timeout-minutes: 60
