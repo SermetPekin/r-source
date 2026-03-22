@@ -1,0 +1,7 @@
+test.dll: test.sym
+	@python -c "open('test.def','wb').write(b'LIBRARY test.dll\nEXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('test.sym','rb') if x.strip() and not x.startswith(b'.')))"
+
+test.sym:
+	@echo " sym1" > test.sym
+	@echo ".sym2" >> test.sym
+	@echo " sym3" >> test.sym

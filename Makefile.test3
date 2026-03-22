@@ -1,0 +1,6 @@
+all:
+	@echo " sym1" > g.def
+	@echo " sym2" >> g.def
+	@echo "hide1" > ga.hide
+	@python3 -c "import os; h=set(x.strip() for x in open('ga.hide','rb')) if os.path.exists('ga.hide') else set(); open('test.def','wb').write(b'LIBRARY Rgraphapp.dll\nEXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('g.def','rb') if x.strip() and x.strip() not in h and not x.startswith(b'.')))"
+	@cat test.def

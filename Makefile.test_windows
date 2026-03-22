@@ -1,0 +1,4 @@
+all:
+	@echo " sym1" > g.def
+	@python -c "import os; open('test.def','wb').write(b'LIBRARY Rgraphapp.dll\nEXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('g.def','rb') if x.strip() and not x.startswith(b'.')))"
+	@cat test.def

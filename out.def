@@ -1,0 +1,4 @@
+LIBRARY dummy.dll
+EXPORTS
+sym1
+sym3

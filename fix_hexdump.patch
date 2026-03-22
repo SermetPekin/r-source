@@ -1,0 +1,14 @@
+diff --git a/.github/workflows/build-and-test.yml b/.github/workflows/build-and-test.yml
+index a123bcd..e456f78 100644
+--- a/.github/workflows/build-and-test.yml
++++ b/.github/workflows/build-and-test.yml
+@@ -201,7 +201,8 @@ jobs:
+         run: |
+           make -j$NUMBER_OF_PROCESSORS || {
+             echo "DUMPING Rgraphapp.def"
+-            cat -A ../extra/graphapp/Rgraphapp.def || true
+-            hexdump -C ../extra/graphapp/Rgraphapp.def || true
++            cat ../extra/graphapp/Rgraphapp.def
++            python -c "import sys; print(repr(open('../extra/graphapp/Rgraphapp.def', 'rb').read(100)))" || true
+             exit 1
+           }

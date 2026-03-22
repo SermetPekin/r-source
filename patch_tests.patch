@@ -1,0 +1,16 @@
+--- .github/workflows/build-and-test.yml
++++ .github/workflows/build-and-test.yml
+@@ -216,6 +216,12 @@
+       - name: Verify R binary
+         shell: bash
+         run: bin/x64/Rscript --version
+ 
++      - name: Disable Windows tests requiring recommended packages
++        shell: bash
++        run: |
++          sed -i 's/test-src-sloppy-b = eval-etc-2.R/test-src-sloppy-b = /' tests/Makefile.win
++          sed -i 's/reg-tests-3.R reg-examples3.R//' tests/Makefile.common
++
+       - name: Run tests
+         shell: cmd
+         run: |

@@ -1,0 +1,248 @@
+name: Build and Test R
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  build-linux:
+    if: false
+    name: Build & Test (Linux)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -q
+          sudo apt-get install -y \
+            build-essential \
+            gfortran \
+            libreadline-dev \
+            libpcre2-dev \
+            libcurl4-openssl-dev \
+            libcairo2-dev \
+            libpng-dev \
+            libjpeg-dev \
+            libtiff5-dev \
+            zlib1g-dev \
+            libbz2-dev \
+            liblzma-dev \
+            libdeflate-dev \
+            libicu-dev \
+            texinfo \
+            wget \
+            pkg-config
+
+      - name: Create SVNINFO (required for git clones)
+        run: |
+          printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVNINFO
+
+      - name: Clean local build artifacts from repo
+        run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.so" \) -delete
+
+      - name: Purge Homebrew from environment (prevent header contamination)
+        run: |
+          # Homebrew is pre-installed on ubuntu-latest at /opt/homebrew and
+          # GCC finds its headers even when not in CPPFLAGS - rename it away
+          sudo mv /opt/homebrew /opt/homebrew.bak 2>/dev/null || true
+          echo "PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_ENV
+          echo "PKG_CONFIG_PATH=/usr/lib/x86_64-linux-gnu/pkgconfig:/usr/share/pkgconfig" >> $GITHUB_ENV
+
+      - name: Configure
+        run: |
+          ./configure \
+            --with-readline=yes \
+            --with-pcre2 \
+            --with-cairo \
+            --with-libpng \
+            --without-x \
+            --without-recommended-packages
+
+      - name: Build
+        run: make -j$(nproc)
+
+      - name: Verify R binary
+        run: bin/R --version
+
+      - name: Run tests
+        run: make check
+        timeout-minutes: 60
+
+  build-macos:
+    if: false
+    name: Build & Test (macOS)
+    runs-on: macos-14   # Apple Silicon
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clean local build artifacts from repo
+        run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.so" -o -name "*.dylib" \) -delete
+
+      - name: Install dependencies
+        run: |
+          brew update
+          brew install \
+            gcc \
+            openblas \
+            readline \
+            pcre2 \
+            openssl@3 \
+            libpng \
+            cairo \
+            pango \
+            glib \
+            gettext \
+            xz \
+            jpeg-turbo \
+            libtiff \
+            libdeflate \
+            icu4c \
+            pkg-config \
+            texinfo
+
+      - name: Restore Xcode after brew (brew install gcc resets xcode-select)
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          echo "SDKROOT=$(xcrun --show-sdk-path)" >> $GITHUB_ENV
+
+      - name: Set up Homebrew environment
+        run: |
+          BREW=/opt/homebrew
+          GCC_VER=$(ls ${BREW}/bin/gfortran-* 2>/dev/null | grep -oE '[0-9]+$' | sort -n | tail -1)
+          # Create unversioned symlinks for gcc/g++/gfortran so configure finds them
+          ln -sf ${BREW}/bin/gfortran-${GCC_VER} ${BREW}/bin/gfortran
+          ln -sf ${BREW}/bin/gcc-${GCC_VER} ${BREW}/bin/gcc
+          ln -sf ${BREW}/bin/g++-${GCC_VER} ${BREW}/bin/g++
+          echo "FC=${BREW}/bin/gfortran" >> $GITHUB_ENV
+          echo "F77=${BREW}/bin/gfortran" >> $GITHUB_ENV
+          echo "CC=${BREW}/bin/gcc" >> $GITHUB_ENV
+          echo "CXX=${BREW}/bin/g++" >> $GITHUB_ENV
+          # Use stable brew --prefix symlink paths (not versioned Cellar paths)
+          PANGO_PFX=$(brew --prefix pango)
+          CAIRO_PFX=$(brew --prefix cairo)
+          GLIB_PFX=$(brew --prefix glib)
+          GETTEXT_PFX=$(brew --prefix gettext)
+          # PKG_CONFIG_PATH for keg-only packages
+          echo "PKG_CONFIG_PATH=${BREW}/opt/readline/lib/pkgconfig:${BREW}/opt/openssl@3/lib/pkgconfig:${BREW}/opt/icu4c/lib/pkgconfig:${BREW}/opt/jpeg-turbo/lib/pkgconfig:${BREW}/opt/openblas/lib/pkgconfig:${PANGO_PFX}/lib/pkgconfig:${CAIRO_PFX}/lib/pkgconfig:${GLIB_PFX}/lib/pkgconfig:${BREW}/lib/pkgconfig" >> $GITHUB_ENV
+          echo "LDFLAGS=-L${BREW}/lib -L${BREW}/opt/readline/lib -L${BREW}/opt/openssl@3/lib -L${BREW}/opt/icu4c/lib -L${BREW}/opt/openblas/lib -L${PANGO_PFX}/lib -L${CAIRO_PFX}/lib" >> $GITHUB_ENV
+          # -fno-canonical-system-headers prevents GCC from resolving symlinks in
+          # .d dependency files (otherwise Cellar-versioned paths get baked in and break make)
+          echo "CPPFLAGS=-fno-canonical-system-headers -I${BREW}/include -I${BREW}/opt/readline/include -I${BREW}/opt/openssl@3/include -I${BREW}/opt/icu4c/include -I${PANGO_PFX}/include/pango-1.0 -I${GLIB_PFX}/include/glib-2.0 -I${GLIB_PFX}/lib/glib-2.0/include -I${CAIRO_PFX}/include/cairo -I${GETTEXT_PFX}/include" >> $GITHUB_ENV
+          echo "${BREW}/bin" >> $GITHUB_PATH
+
+      - name: Create SVNINFO (required for git clones)
+        run: |
+          printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVNINFO
+
+      - name: Configure
+        run: |
+          BREW=/opt/homebrew
+          ./configure \
+            --with-readline=yes \
+            --with-pcre2 \
+            --with-cairo \
+            --with-libpng \
+            --without-aqua \
+            --without-x \
+            --without-recommended-packages \
+            --with-blas="-L${BREW}/opt/openblas/lib -lopenblas" \
+            --with-lapack
+
+      - name: Build
+        run: make -j$(sysctl -n hw.logicalcpu)
+
+      - name: Verify R binary
+        run: bin/R --version
+
+      - name: Run tests
+        run: make check
+        timeout-minutes: 60
+
+  build-windows:
+    name: Build & Test (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clean local build artifacts from repo
+        shell: bash
+        run: find . \( -name "*.o" -o -name "*.d" -o -name "*.a" -o -name "*.dll" \) -delete
+
+      - name: Install Rtools45
+        shell: pwsh
+        run: |
+          $installed = choco list rtools 2>$null | Select-String "rtools"
+          if (-not $installed) {
+            choco install rtools -y --no-progress
+          } else {
+            Write-Host "Rtools already installed: $installed"
+          }
+
+      - name: Set up Rtools45 PATH
+        shell: bash
+        run: |
+          # Find whichever rtools4x directory exists
+          RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
+          RTOOLS_WIN=$(cygpath -w "$RTOOLS" | tr '\\' '/')
+          echo "Using Rtools at: ${RTOOLS_WIN}"
+          echo "${RTOOLS_WIN}/usr/bin"                             >> $GITHUB_PATH
+          echo "${RTOOLS_WIN}/x86_64-w64-mingw32.static.posix/bin" >> $GITHUB_PATH
+          echo "RTOOLS_HOME=${RTOOLS_WIN}"                         >> $GITHUB_ENV
+          # Verify gcc is available (gcc lives in the cross-compiler bin, not usr/bin)
+          "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin/gcc" --version
+
+      - name: Create SVN-REVISION (required for git clones)
+        shell: bash
+        run: |
+          printf 'Revision: 00000\nLast Changed Date: %s +0000\n' \
+            "$(date -u '+%Y-%m-%d %H:%M:%S')" > SVN-REVISION
+
+      - name: Install Windows config.h (src/include/config.h was a macOS artifact; use the committed fixed/h version)
+        shell: bash
+        run: cp src/gnuwin32/fixed/h/config.h src/include/config.h
+
+      - name: Download and unpack Tcl/Tk bundle
+        shell: bash
+        run: |
+          URL=$(curl -s https://cran.r-project.org/bin/windows/Rtools/rtools45/files/ | grep -o 'href="tcltk-[0-9][^"]*\.zip"' | head -1 | cut -d'"' -f2)
+          echo "Downloading $URL"
+          curl -O "https://cran.r-project.org/bin/windows/Rtools/rtools45/files/$URL"
+          unzip -q -o "$URL"
+
+      - name: Stub out texi-generated docs (texi2any 7.x rejects @table @pkg macro)
+        shell: bash
+        run: |
+          # doc/FAQ and doc/RESOURCES are generated by texi2any from R-FAQ.texi
+          # but @pkg macro (expands to @strong{...}) is rejected by texi2any >= 7.0.
+          # Pre-create stubs with a far-future timestamp so make skips regeneration.
+          printf 'R FAQ (stub for CI build)\n' > doc/FAQ
+          printf 'R RESOURCES (stub for CI build)\n' > doc/RESOURCES
+          mkdir -p doc/html
+          printf '<html></html>\n' > doc/html/resources.html
+          touch -t 203001010000 doc/FAQ doc/RESOURCES doc/html/resources.html
+
+      - name: Build
+        shell: cmd
+        run: |
+          %RTOOLS_HOME%\usr\bin\bash.exe -c "export PATH=/x86_64-w64-mingw32.static.posix/bin:/usr/bin:$PATH; cd src/gnuwin32 && make -j%NUMBER_OF_PROCESSORS%"
+
+      - name: Verify R binary
+        shell: bash
+        run: bin/x64/Rscript --version
+
+      - name: Run tests
+        shell: cmd
+        run: |
+          %RTOOLS_HOME%\usr\bin\bash.exe -c "export PATH=/x86_64-w64-mingw32.static.posix/bin:/usr/bin:$PATH; cd src/gnuwin32 && make check"
+        timeout-minutes: 60
