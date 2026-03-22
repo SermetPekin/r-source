@@ -238,5 +238,6 @@ jobs:
       - name: Run tests
         shell: bash
         working-directory: src/gnuwin32
-        run: "${RTOOLS_HOME}/usr/bin/bash" -c "make check"
+        run: |
+          "${RTOOLS_HOME}/usr/bin/bash" -c "make check"
         timeout-minutes: 60
