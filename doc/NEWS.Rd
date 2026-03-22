@@ -5,6 +5,84 @@
 \title{R News}
 \encoding{UTF-8}
 
+\section{\Rlogo CHANGES IN R 4.5.3}{
+
+  \subsection{UTILITIES}{
+    \itemize{
+      \item \command{tools/fetch-recommended} can be used instead of
+      \command{tools/rsync-recommended} to fetch recommended packages
+      into \R sources using \command{curl} on systems without
+      \command{rsync} or behind firewalls.
+    }
+  }
+
+  \subsection{PACKAGE INSTALLATION}{
+    \itemize{
+      \item C++ standard specifications (\code{CXX_STD =} in
+      \file{src/Makevars*} and in the \code{SystemRequirements} field of
+      the \file{DESCRIPTION} file) are now checked more thoroughly.
+      Invalid values are still ignored but now give a warning, as do
+      contradictory specifications.
+
+      \item (Preliminary) support for C++26 has been extended to Windows.
+
+      \item A non-zero exit status from \file{cleanup}, \file{cleanup.win}
+      or \file{cleanup.ucrt}, if requested via options \option{--clean} or
+      \option{--preclean}, is now reported with a warning.
+    }
+  }
+
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item \code{all.equal(obj, simple, check.class=FALSE)} now is true, also
+      when \code{simple} is a bare atomic vector and \code{obj} has a simple
+      class, fixing the first part of \PR{18971} thanks to \I{Jan Gorecki}.
+
+      \item \code{str(x, give.attr=FALSE)} no longer shows attributes when
+      \code{x} is a zero length \code{"Date"} or \code{"POSIXt"} object.
+
+      \item Tweaks to binning for \code{bw.SJ()} and \code{bw.ucv()} in the
+      very rare case of data which have an extremely small range compared to
+      their absolute values, e.g., \code{x <- 6e9 + 6:9}.
+
+      \item Formatting book-type \code{bibentry} objects now converts
+      \LaTeX accents also in the publisher and series fields.
+
+      \item \code{model.frame(~1, list(), na.action=na.pass)} and similar
+      \dQuote{border-line} uses no longer produce invalid data frames,
+      fixing \PR{18977}, reported with patch by \I{Mikael Jagan}.
+
+      \item \code{length(<POSIXlt>) <- v} is more careful about balancing,
+      notably when \code{v} is not integer, thanks to \I{Suharto Anggono}'s
+      remarks on the mailing list R-devel.
+
+      \item \code{approx(<x_with_ties>, <y_with_NA>, na.rm = FALSE)} now
+      should always call the \code{ties()} function, fixing \PR{17604}
+      reported by \I{Bill Dunlap}.
+
+      \item \code{besselJ(1, 1e-15)} and similar now give correct results,
+      thanks to \I{Leo Mada} and other \I{\dQuote{R-help}ers}.
+
+      \item \code{vignette(\var{pkg}::\var{topic})} is now a documented
+      usage variant and confines vignette retrieval to the specified package.
+
+      \item \code{pretty(ch)} again correctly works with \code{ch} a
+      character vector of numbers.
+
+      \item \code{persp()} labels the three axes correctly also when C level
+      \code{atan2pi()} is available, fixing \PR{19007} by \I{Klaus Schliep}.
+
+      \item Large (tall) subscripts in \I{plotmath} expressions are now
+      positioned correctly.  They were being positioned too high.
+
+      \item \code{Ops} group (Arith, Compare,..) methods for
+      matrix-\code{"ts"} now do return (zero length) matrices even when the
+      two series do not overlap, a very partial fix of \PR{18972} which is to
+      be fully addressed later.
+    }
+  }
+}
+
 \section{\Rlogo CHANGES IN R 4.5.2}{
 
   \subsection{UTILITIES}{
@@ -311,6 +389,14 @@
       \item New function \code{use()} to use packages in R scripts with
       full control over what gets added to the search path.  (Actually
       already available since \R 4.4.0.)
+
+      \item New connection type \code{zstdfile} for files compressed by
+      \command{zstd} if \R{} was built with such support.  \code{file()}
+      and \code{gzfile()} can automagically read such files.
+
+      \item \code{memCompress()} and \code{memDecompress()} have options
+      to use \command{zstd} compression if \R{} was built with support
+      for it.
 
       \item There is some support for \command{zstd} compression of
       tarballs in \code{tar()} and \code{untar()}.  (This depends on OS
@@ -1653,7 +1739,7 @@
 
       \item \code{pairwise.t.test()} misbehaved when subgroups had 0 \abbr{DF}
       for variance, even with \code{pool.sd = TRUE}.  (\PR{18594} by
-      Jack Berry).
+      Jack Berry.)
 
       \item Probability distribution functions \code{[dpq]<distrib>(x, *)},
       but also \code{bessel[IKJY](x, .)} now consistently preserve
@@ -3087,7 +3173,7 @@
 
       \item (macOS) The run-time check for libraries from \I{XQuartz} for
       X11 and Tcl/Tk no longer uses \code{otool} from the Apple
-      Developer Tools (PR#18400).
+      Developer Tools (\PR{18400}).
 
       \item The \LaTeX style for producing the PDF manuals, \file{Rd.sty},
       now loads the standard \samp{amsmath}, \samp{amsfonts} and
@@ -3186,7 +3272,7 @@
 
       \item \command{Rterm} support for \code{Alt+xxx} sequences has been
       fixed to produce the corresponding character (only) once. This fixes
-      pasting text with tilde on Italian keyboard (PR#18391).
+      pasting text with tilde on Italian keyboard (\PR{18391}).
     }
   }
 }
@@ -3943,8 +4029,8 @@
       explicit \code{domain = *} specification in such cases.
 
       \item \code{identical(attrib.as.set=FALSE)} now works correctly with
-      data frames with default row names (Thanks to \I{Charlie Gao}'s
-      \PR{18179}).
+      data frames with default row names.  (Thanks to \I{Charlie Gao}'s
+      \PR{18179}.)
 
       \item \code{txtProgressBar()} now enforces a non-zero width for
       argument \code{char}, without which no progress can be visible.

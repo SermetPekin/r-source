@@ -1,7 +1,7 @@
 #  File src/library/tools/R/install.R
 #  Part of the R package, https://www.R-project.org
 #
-#  Copyright (C) 1995-2025 The R Core Team
+#  Copyright (C) 1995-2026 The R Core Team
 #
 # NB: also copyright dates in Usages.
 #
@@ -390,12 +390,27 @@ if(FALSE) {
             sys_requires <- desc["SystemRequirements"]
             if (!is.na(sys_requires)) {
                 sys_requires <- unlist(strsplit(sys_requires, ","))
+                found <- NA
                 for (i in cxx_standards) {
-                    pattern <- paste0("^[[:space:]]*C[+][+]",i,"[[:space:]]*$")
-                    if(any(grepl(pattern, sys_requires, ignore.case=TRUE))) {
+##                    pattern <- paste0("^[[:space:]]*C[+][+]",i,"[[:space:]]*$")
+                    pattern <- paste0("(^| )C[+][+]",i,"([ ,;]|$)")
+                    if(any(grepl(pattern, sys_requires))) {
                         Sys.setenv("R_PKG_CXX_STD"=i)
                         on.exit(Sys.unsetenv("R_PKG_CXX_STD"))
+                        found <- i
                         break
+                    }
+                }
+                if (is.na(found)) {
+                    pattern <- paste0("^[[:space:]]*C[+][+]")
+                    val <- grep(pattern, sys_requires, value = TRUE)
+                    if(length(val)) {
+                        val <- sub(pattern, "",  val)
+                        val <- sub("[,;].*$", "", val)
+                        val <- sub(" *$", "", val)
+                        val <- paste0("C++", val)
+                        msg <- sprintf("SystemRequirements: invalid C++ specification %s", sQuote(val))
+                        warning(msg, domain = NA, call. = FALSE)
                     }
                 }
                 if(is.na(use_C)) {
@@ -531,12 +546,16 @@ if(FALSE) {
             setwd(owd)
         }
         if (WINDOWS) {
-            if (file.exists("cleanup.ucrt"))
-                system("sh ./cleanup.ucrt")
-            else if (file.exists("cleanup.win"))
-                system("sh ./cleanup.win")
-        } else if (file_test("-x", "cleanup")) system("./cleanup")
-        else if (file.exists("cleanup"))
+            if (file.exists("cleanup.ucrt")) {
+                if (system("sh ./cleanup.ucrt"))
+                    warning("running 'cleanup.ucrt' failed", call. = FALSE, domain = NA)
+            } else if (file.exists("cleanup.win"))
+                if (system("sh ./cleanup.win"))
+                    warning("running 'cleanup.win' failed", call. = FALSE, domain = NA)
+        } else if (file_test("-x", "cleanup")) {
+            if (system("./cleanup"))
+                warning("running 'cleanup' failed", call. = FALSE, domain = NA)
+        } else if (file.exists("cleanup"))
             warning("'cleanup' exists but is not executable -- see the 'R Installation and Administration Manual'", call. = FALSE)
         revert_install_time_patches()
     }
@@ -1526,7 +1545,7 @@ if(FALSE) {
 		    ## Tweak fake installation to provide an 'empty'
 		    ## useDynLib() for the time being.  Completely
 		    ## removing the directive results in checkFF()
-		    ## being too aggresive in the case where the
+		    ## being too aggressive in the case where the
 		    ## presence of the directive enables unambiguous
 		    ## symbol resolution w/out 'PACKAGE' arguments.
 		    ## However, empty directives are not really meant
@@ -2626,10 +2645,17 @@ if(FALSE) {
         if (length(ll <- grep("^CXX_STD *=", lines, perl = TRUE,
                               value = TRUE, useBytes = TRUE)) == 1) {
             val <- gsub("^CXX_STD *= *CXX", "", ll)
+            val <- gsub("#.*$", "", val)
             val <- gsub(" +$", "", val)
             if (val %in% cxx_standards) {
                 use_cxxstd <- val
                 with_cxx <- TRUE
+            } else {
+                val <- gsub("^CXX_STD *= *", "", ll)
+                val <- gsub("#.*$", "", val)
+                val <- gsub(" +$", "", val)
+                msg <- sprintf("src/%s: Unknown C++ standard %s was ignored", fn,  sQuote(val))
+                warning(msg, domain = NA, call. = FALSE)
             }
         }
         if (any(grepl("^USE_FC_TO_LINK", lines, perl=TRUE, useBytes = TRUE)))
@@ -2642,10 +2668,17 @@ if(FALSE) {
         if (length(ll <- grep("^CXX_STD *=", lines, perl = TRUE,
                               value = TRUE, useBytes = TRUE)) == 1) {
             val <- gsub("^CXX_STD *= *CXX", "", ll)
+            val <- gsub("#.*$", "", val)
             val <- gsub(" +$", "", val)
             if (val %in% cxx_standards) {
                 use_cxxstd <- val
                 with_cxx <- TRUE
+            } else {
+                val <- gsub("^CXX_STD *= *", "", ll)
+                val <- gsub("#.*$", "", val)
+                val <- gsub(" +$", "", val)
+                msg <- sprintf("src/Makevars: Unknown C++ standard %s was ignored", sQuote(val))
+                warning(msg, domain = NA, call. = FALSE)
             }
         }
         if (any(grepl("^USE_FC_TO_LINK", lines, perl=TRUE, useBytes = TRUE)))
@@ -2659,11 +2692,13 @@ if(FALSE) {
             }
         }
     }
+    val <- Sys.getenv("R_PKG_CXX_STD")
     if (is.null(use_cxxstd)) {
-        val <- Sys.getenv("R_PKG_CXX_STD")
         if (val %in% cxx_standards) {
             use_cxxstd <- val
         }
+    } else if (nzchar(val) && (val != use_cxxstd)) {
+        warning("SystemRequirements and Makevars* specified different C++ standards", domain = NA, call. = FALSE)
     }
 
     if (with_cxx) {
@@ -2779,8 +2814,12 @@ if(FALSE) {
         system(paste(cmd, "-n"))
         res <- 0
     } else {
+        ## first report versions of involved compilers
         lines <- system(paste(MAKE, p1(paste("-f", shQuote(makefiles))),
                               "compilers"), intern = TRUE)
+        ## (unless make fails anyway, such as from syntax errors in makefiles)
+        if (is.null(attr(lines, "status"))) {
+
         if (with_c) {
             cc <- lines[grep("^CC =", lines)]
             cc <- sub("CC = ", "", cc)
@@ -2814,6 +2853,8 @@ if(FALSE) {
                         message("using C++", use_cxxstd)
                 }
             }
+        }
+
         }
         if (Sys.info()["sysname"] == "Darwin" &&
             (with_c|| with_f77 || with_f9x || with_cxx)) {
