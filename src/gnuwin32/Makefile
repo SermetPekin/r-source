@@ -170,7 +170,7 @@ R.dll: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
 R.exp: $(OBJS) $(MAINLIBS) $(EXTRALIBS)
 	@$(NM) $^ | $(SED) -n $(SYMPAT) | LC_COLLATE=C $(SORT) | \
 	  uniq $(NM_FILTER) > R0.def
-	@python -c "import os; h=set(x.strip() for x in open('Rdll.hide','rb')) if os.path.exists('Rdll.hide') else set(); open('R.exp','wb').write(b'LIBRARY R.dll\nEXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('R0.def','rb') if x.strip() and x.strip() not in h and not x.startswith(b'.')))"
+	@python -c "import os; h=set(x.strip() for x in open('Rdll.hide','rb')) if os.path.exists('Rdll.hide') else set(); open('R.exp','wb').write(b'EXPORTS\n'+b''.join(x.strip()+b'\n' for x in open('R0.def','rb') if x.strip() and x.strip() not in h and not x.startswith(b'.')))"
 	@$(RM) R0.def
 
 

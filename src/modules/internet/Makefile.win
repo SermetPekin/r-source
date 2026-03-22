@@ -29,7 +29,7 @@ endif
 
 ../../../modules$(R_ARCH)/internet.dll: internet.o libcurl.o sockconn.o Rhttpd.o Rsock.o sock.o dllversion.o
 	@$(MKDIR) -p ../../../modules$(R_ARCH)
-	@python -c "open('internet.def','wb').write(b'LIBRARY internet.dll\nEXPORTS\n R_init_internet\n')"
+	@python -c "open('internet.def','wb').write(b'EXPORTS\n R_init_internet\n')"
 	$(DLL) -shared  -o $@ $^ internet.def -L../../../$(IMPDIR) -lR -lRgraphapp $(EXTRA_LIBS)
 	@$(RM) internet.def
 
