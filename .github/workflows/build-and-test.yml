@@ -192,10 +192,11 @@ jobs:
         run: |
           # Find whichever rtools4x directory exists
           RTOOLS=$(ls -d /c/rtools4* 2>/dev/null | sort -V | tail -1)
-          echo "Using Rtools at: ${RTOOLS}"
-          echo "${RTOOLS}/usr/bin"                                 >> $GITHUB_PATH
-          echo "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin"    >> $GITHUB_PATH
-          echo "RTOOLS_HOME=${RTOOLS}"                             >> $GITHUB_ENV
+          RTOOLS_WIN=$(cygpath -w "$RTOOLS" | tr '\\' '/')
+          echo "Using Rtools at: ${RTOOLS_WIN}"
+          echo "${RTOOLS_WIN}/usr/bin"                             >> $GITHUB_PATH
+          echo "${RTOOLS_WIN}/x86_64-w64-mingw32.static.posix/bin" >> $GITHUB_PATH
+          echo "RTOOLS_HOME=${RTOOLS_WIN}"                         >> $GITHUB_ENV
           # Verify gcc is available (gcc lives in the cross-compiler bin, not usr/bin)
           "${RTOOLS}/x86_64-w64-mingw32.static.posix/bin/gcc" --version
 
@@ -222,22 +223,17 @@ jobs:
           touch -t 203001010000 doc/FAQ doc/RESOURCES doc/html/resources.html
 
       - name: Build
-        shell: bash
+        shell: cmd
         working-directory: src/gnuwin32
         run: |
-          "${RTOOLS_HOME}/usr/bin/bash" -c "make -j$NUMBER_OF_PROCESSORS" || {
-            echo "DUMPING Rgraphapp.def"
-            python -c "import sys; sys.stdout.write(repr(open('../extra/graphapp/Rgraphapp.def', 'rb').read(100)) + '\n')" || true
-            exit 1
-          }
+          make -j%NUMBER_OF_PROCESSORS%
 
       - name: Verify R binary
         shell: bash
         run: bin/x64/Rscript --version
 
       - name: Run tests
-        shell: bash
+        shell: cmd
         working-directory: src/gnuwin32
-        run: |
-          "${RTOOLS_HOME}/usr/bin/bash" -c "make check"
+        run: make check
         timeout-minutes: 60
