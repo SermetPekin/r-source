@@ -210,6 +210,14 @@ jobs:
         shell: bash
         run: cp src/gnuwin32/fixed/h/config.h src/include/config.h
 
+      - name: Download and unpack Tcl/Tk bundle
+        shell: bash
+        run: |
+          URL=$(curl -s https://cran.r-project.org/bin/windows/Rtools/rtools45/files/ | grep -o 'href="tcltk-[0-9][^"]*\.zip"' | head -1 | cut -d'"' -f2)
+          echo "Downloading $URL"
+          curl -O "https://cran.r-project.org/bin/windows/Rtools/rtools45/files/$URL"
+          unzip -q -o "$URL"
+
       - name: Stub out texi-generated docs (texi2any 7.x rejects @table @pkg macro)
         shell: bash
         run: |
