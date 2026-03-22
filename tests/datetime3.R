@@ -763,6 +763,56 @@ assertErrV(seq(to=to, by=by))
 assertErrV(seq(from, to, by=by, length.out=length.out))
 
 
+## subassignment to POSIXlt must reconcile time zones - PR#18919
+tz <- "America/Toronto"
+if(!tz %in% OlsonNames()) {
+    cat(sprintf("%s not in time zone data base\n", tz))
+} else withAutoprint({
+    (x <- x1 <- x2 <- as.POSIXlt(.POSIXct(0, tz = "UTC")))
+    (y <- as.POSIXlt(.POSIXct(0, tz = tz)))
+    x1[1L] <- x2[[1L]] <- y
+    x1; x2
+    stopifnot(identical(x1, x2))
+    ## but really differing from x  by 5 hours ==> *will* change after R 4.5.x
+})
+n <- 4L # >= 3 for NA-filling in subassignment
+z1 <- z2 <- `attr<-`(z <- as.POSIXlt(.POSIXct(double(n), "UTC")),
+                     "balanced", NULL)
+z1$year <- z2$year <- z$year[1L] # "un"balance
+z1[n] <- z2[[n]] <- z[[1L]]      # check `[<-` and `[[<-`
+stopifnot(z2[,"year"] == 70) # was (70 NA NA 70) previously
+identicalPlt <- function(x, y, ...)
+    identical(balancePOSIXlt(x), balancePOSIXlt(y), ...)
+stopifnot(identicalPlt(z1, z), identicalPlt(z2, z))
+## failed previously, incl in rev 88441
+
+## extended & moved from ../src/library/base/man/DateTimeClasses.Rd
+##  length(.) <- n   now works for "POSIXct" and "POSIXlt" :
+for(lpS in list(.leap.seconds, as.POSIXlt(.leap.seconds))) {
+    l. <- lpS; length(l.) <- 12 # shortened
+    l2 <- lpS; length(l2) <- 5 + length(lpS) # pad w/ 5 NAs
+    print(tail(l2, 7))
+    stopifnot(exprs = {
+      ## length(.) <- * is compatible to subsetting/indexing:
+      identical(l., lpS[seq_along(l.)])
+      identical(l2, lpS[seq_along(l2)])
+      ## has filled with NAs
+      is.na(l2[(length(lpS)+1):length(l2)])
+    })
+    if(inherits(l2, "POSIXlt")) {
+        bl2 <- balancePOSIXlt(l2)
+        stopifnot(exprs = {
+          all.equal(bl2, l2)
+          is.na (attr( l2, "balanced"))
+          isTRUE(attr(bl2, "balanced"))
+          sum(is.na( l2$isdst)) == 5L # NAs from padding
+          sum(is.na(bl2$isdst)) == 0L
+        })
+    }
+}
+
+
+
 ## keep at end
 rbind(last =  proc.time() - .pt,
       total = proc.time())

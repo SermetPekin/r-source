@@ -5,6 +5,89 @@
 \title{R News}
 \encoding{UTF-8}
 
+\section{\Rlogo CHANGES IN R 4.5.2}{
+
+  \subsection{UTILITIES}{
+    \itemize{
+      \item \command{R CMD check} now handles archives with extension
+      \file{.tar} or \file{.tar.zstd} (where \command{zstd} compression
+      is supported by the \R build).
+    }
+  }
+
+  \subsection{BUG FIXES}{
+    \itemize{
+      \item \code{t.test(c(1:3, Inf))} and similar no longer produce an error but
+      return a (still not so useful) \code{"htest"} result, fixing
+      \PR{18901}, thanks to \I{Jesse Alderliesten}.
+
+      \item \code{attr(., "tsp") <- val} now uses \code{getOption("ts.eps")}
+      instead of hardwired \code{1e-5}; consequently, \code{ts(.., ts.eps=*)}
+      now passes \code{ts.eps} to the \code{"tsp"} setting C code;
+      both fixing a long-standing \sQuote{\I{FIXME}}.
+
+      \item \code{insertSource()} now ignores the internal
+      \code{.packageName} object, avoiding a superfluous message.
+
+      \item In static HTML help, links to vignette files from the default
+      \file{doc/index.html} page now also work for packages not installed
+      in the default \code{.Library},
+      thanks to a report by \I{Patrice Kiener}.
+
+      \item %\code{assignInNamespace("\var{S3method}")} and thus
+      \code{fixInNamespace("\var{S3method}")} failed to update the S3
+      methods table when the generic was not on the search path.
+
+      \item In plain-text help (\code{Rd2txt}), an initial newline from
+      an Rd inline \verb{\eqn} no longer breaks the paragraph.
+
+      \item \code{hist(*, log = "x")} now works without a warning, thanks
+      to \I{Martin Smith}'s \PR{18921}.
+
+      \item \I{Subassigning} \code{"POSIXlt"}, i.e., \code{<tdat>[i] <- val}
+      and \code{<tdat>[[i]] <- val} now rebalance as they should,
+      thanks to \I{Mikael Jagan}'s \PR{18919}.
+
+      \item \code{<POSIXlt>[*]} (re-)setting \code{"balanced"}, fixing
+      \PR{18681} comment #7, thanks to \I{Mikael Jagan}.
+
+      \item All four of \code{{col,row}{Sums,Means}(Z, na.rm=TRUE)} now correctly work
+      with complex \code{Z} where \code{is.na(Re(Z))} differs from \code{is.na(Im(Z))},
+      fixing \PR{18942}, unearthed by \I{Dirk Eddelbuettel}.
+
+      \item Fix for glyph rendering on the \code{quartz()} device when
+      there is other (\dQuote{normal}) text drawn on the device.  The
+      problem was that the text transformation matrix was not reset
+      so glyphs would be rendered incorrectly (often completely outside
+      the device, i.e., not visible).
+
+      \item Functions \code{install.packages()} and \code{download.packages()} again
+      consult option \code{download.file.method} when the download method is
+      unspecified.
+
+      \item \I{Tanguy Barthelemy} and colleagues at the
+      \sQuote{\I{R Dev Day}} following \I{Rencontres R} in May 2025
+      extended the help page of \code{lm()}, fixing \PR{18058}.
+      As suggested by \I{Thomas Soeiro}, such notes were also added to the
+      \code{glm()}, \code{poly()} and \code{splines::bs()} and \code{ns()}
+      pages.
+
+      \item \code{lbeta(1i, 1)} now signals an error, as \code{lbeta()} is not implemented
+      for \code{complex}, fixing \PR{18946} from \I{Ben Bolker} and  \I{Kasper Kristensen}.
+
+      \item The Cairo-based SVG device uses \code{pt} as the default
+      document unit also with Cairo >= 1.17.8 (\PR{18912}).
+
+      \item \code{pretty(*, eps.correct = 2)} has been fixed, e.g., to
+      avoid over 1 million length result for \code{pretty(c(0, 1e-322), eps.correct = 2)}.
+
+      \item When \code{"POSIXlt"} date-time objects are \code{NA}-padded
+      from subsetting or increasing \code{length} in the \code{`[`} or
+      \code{`length<-`} methods, the \code{"balanced"} attribute is set
+      to \code{NA}, now; noted in \PR{18681}, thanks to \I{Mikael Jagan}.
+    }
+  }
+}
 
 \section{\Rlogo CHANGES IN R 4.5.1}{
 
@@ -25,9 +108,6 @@
 
       \item Tcl/Tk\sspace{}9 can be used to build package \code{tcltk}:
       this has become the default in some Linux distributions.
-      \strong{N.B.}  several third-party packages currently require
-      Tcl/Tk\sspace{}8 or even 8.6 without declaring so.
-      %% including tkrplot, loon and tcltk2
     }
   }
 
@@ -70,12 +150,6 @@
 }
 
 \section{\Rlogo CHANGES IN R 4.5.0}{
-  %% \subsection{SIGNIFICANT USER-VISIBLE CHANGES}{
-  %%   \itemize{
-  %%     \item .
-  %%   }
-  %% }
-
   \subsection{NEW FEATURES}{
     \itemize{
       \item \code{as.integer(rl)} and hence \code{as.raw(rl)} now work for
@@ -732,13 +806,13 @@
       (non integer) seconds.  Fixes \PR{17350}, thanks to new contributions
       by \I{LatinR}'s \sQuote{\I{R Dev Day}} participants, \I{Heather
       Turner} and \I{Dirk Eddelbuettel}; also fixes more cases, notably
-      when \code{format} contains "%OS<nodigit>".
+      when \code{format} contains \samp{\%OS<nodigit>}.
 
       \item \code{options(scipen = NULL)} and other invalid values now
       signal an error instead of invalidating ops relying on a finite
       integer value.  Values outside the range -9 .. 9999 are now warned
       about and set to a boundary or to the default \code{0}, e.g., in
-      case of an \code{NA}.
+      case of an \code{NA}.  This also fixes \PR{16322}.
 
       \item \code{cbind()} could segfault with \code{NULL} inputs.
       (Seen when \R was built with \command{gcc-14}, \abbr{LTO} and C99
@@ -1070,7 +1144,7 @@
       \code{"glm"} method for \code{profile()} and the \code{plot()}
       and \code{pairs()} methods for class \code{"profile"} have been
       copied from \pkg{MASS} to \pkg{stats}.  (\code{profile.nls()} and
-      \code{plot.profile.nls()} were already in \code{stats}.)
+      \code{plot.profile.nls()} were already in \pkg{stats}.)
 
       \item The \code{confint()} and \code{profile} methods for
       \code{"glm"} objects have gained a possibility to do profiling
@@ -3410,7 +3484,7 @@
       patch by \I{Thomas Soeiro} in \PR{18243}.
 
       \item \code{as.vector()} gains a \code{data.frame} method which
-      returns a simple named list, also clearing a long standing
+      returns a simple named list, also clearing a long-standing
       \sQuote{\I{FIXME}} to enable \code{as.vector(<data.frame>,
       mode="list")}.  This breaks code relying on
       \code{as.vector(<data.frame>)} to return the unchanged data frame.
@@ -5553,7 +5627,7 @@
       wildcard and tilde expansion.  Elements of \code{x} of value
       \code{"~"} are now ignored.
 
-      \item \code{mle()} in the \code{stats4} package has had its
+      \item \code{mle()} in the \pkg{stats4} package has had its
       interface extended so that arguments to the negative
       log-likelihood function can be one or more vectors, with similar
       conventions applying to bounds, start values, and parameter values
@@ -5935,7 +6009,7 @@
       \code{n - k} for \code{k} and \code{n} was only \emph{nearly} integer
       (report from Erik Scott Wright).
 
-      \item \code{mle()} in the \code{stats4} package had problems
+      \item \code{mle()} in the \pkg{stats4} package had problems
       combining use of box constraints and fixed starting values (in
       particular, confidence intervals were affected).
 

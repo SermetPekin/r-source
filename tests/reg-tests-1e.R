@@ -1610,6 +1610,7 @@ assertWarnV(options(scipen = -100))# warns and sets to min = -9
 stopifnot(identical(getOption("scipen"), -9L))
 assertWarnV(options(scipen = 100000))# warns and sets to max = 9999
 stopifnot(identical(getOption("scipen"), 9999L))
+options(scipen=scipenO) # revert
 ## setting to NULL  would invalidate as.character(Sys.time())
 
 
@@ -1927,6 +1928,125 @@ stopifnot(identical(p1[2], substr(zp,1,1)),
           identical(p1[num != 0], p2[num != 0]),
           identical(p2, local({ p <- as.character(num); p[p == 0] <- zp; p })))
 ## p2 gave warning too, and was the same as p1, erronously in  R <= 4.5.0
+
+
+
+
+## t.test(<Inf>...) -- PR#18901
+x <- c(1:6,Inf); y <- c(1:20, Inf); yN <- c(-Inf, 1:20)
+(tt1 <- t.test(x))
+tt2. <- t.test(x, y)
+(tt2N <- t.test(x, yN))
+stopifnot(exprs = {
+    inherits(tt1,  "htest"); is.na(c(tt1 $p.value, tt1 $conf.int))
+    inherits(tt2., "htest"); is.na(c(tt2.$p.value, tt2.$conf.int))
+    inherits(tt2N, "htest"); is.na(c(tt2N$p.value, tt2N$conf.int))
+    tt1$estimate == Inf
+    tt2N$estimate == c(Inf, -Inf)
+})
+## The t.test() calls errored all in R <= 4.5.1
+
+
+## long standing "FIXME" fixed:
+stopifnot(is.ts(ts(1:711, frequency=2*pi, start = 1, end = 114)))
+assertErrV(     ts(1:711, frequency=2*pi, start = 1, end = 114, ts.eps = 1e-6) )
+## did *not* error in R <= 4.5.1, as 'ts.eps' was *not* passed to C code
+
+
+## (fix|assign)InNamespace(<S3method>) when the generic is not in search()
+try(detach("package:tools"), silent = TRUE) # just in case
+assertValueIs <- function (value) stopifnot(exprs = {
+    identical(tools:::toRd.default(1), value)
+    identical(tools::toRd(1), value)
+})
+assertValueIs("1")
+## modify the default method to return an empty string:
+omethod <- tools:::toRd.default
+assignInNamespace("toRd.default", `body<-`(omethod, value = ""), "tools")
+## R <= 4.5.1 gave Error: object 'toRd' of mode 'function' was not found
+assertValueIs("")  # failed for tools::toRd(1): S3 table was not updated
+## now restore the original definition, testing fixInNamespace():
+fixInNamespace("toRd.default", "tools", editor = function (...) omethod)
+## failed in R <= 4.5.1
+assertValueIs("1")
+
+
+## No warnings for hist(.., log="x") -- PR#18921
+hist(1:100, breaks = 2^(0:8), log = "x")
+## used to signal 3 warnings
+
+
+## subassigning from real to complex keeping zero imaginary part
+ll <- as.list(c(NA, 0L, NA_integer_, 0, NA_real_, NaN, -Inf, Inf,
+                complex(real = 2:-1, imaginary = c(-Inf, 0:1, Inf)), NA_complex_))
+rr <- vapply(ll, Re, 0)
+ii <- vapply(ll, Im, 0) # all 0, but the very last
+chk <- function (x, y = as.vector(x)) stopifnot(identical(Re(y), rr),
+                                                identical(Im(y), ii))
+chk(unlist(ll))
+a1 <- a2 <- complex(m <- length(ll))
+for (i in seq_len(m)) a1[i] <- a2[[i]] <- ll[[i]]
+chk(a1); chk(a2)
+a1 <- a2 <- array(0i, c(m))
+for (i in seq_len(m)) a1[i] <- a2[[i]] <- ll[[i]]
+chk(a1); chk(a2)
+a1 <- a2 <- array(0i, c(m, 1L))
+for (i in seq_len(m)) a1[i, 1L] <- a2[[i, 1L]] <- ll[[i]]
+chk(a1); chk(a2)
+a1 <- a2 <- array(0i, c(m, 1L, 1L))
+for (i in seq_len(m)) a1[i, 1L, 1L] <- a2[[i, 1L, 1L]] <- ll[[i]]
+chk(a1); chk(a2)
+## Im(.)s had more NA's than just at the end, in R <= 4.5.z
+
+
+## colSums() .. rowMeans() with complex z, where Re() and Im() contain NAs in different places.
+## "Obviously correct" versions (w/o 'dims' arg):
+colSumsC  <- function(x, na.rm = FALSE) apply(x, 2L,  sum, na.rm=na.rm)
+rowSumsC  <- function(x, na.rm = FALSE) apply(x, 1L,  sum, na.rm=na.rm)
+colMeansC <- function(x, na.rm = FALSE) apply(x, 2L, mean, na.rm=na.rm)
+rowMeansC <- function(x, na.rm = FALSE) apply(x, 1L, mean, na.rm=na.rm)
+y <- 1:12; y[c(2,3,5,7,11)] <- NA
+(z <- matrix(complex(re = 12:1, im = y), 3))
+##       [,1] [,2] [,3]  [,4]
+## [1,] 12+1i 9+4i   NA 3+10i
+## [2,]    NA   NA 5+8i    NA
+## [3,]    NA 7+6i 4+9i 1+12i
+stopifnot(!any(is.na(Re(z)))) # no NA's in real part
+for(na in c(TRUE, FALSE))
+  stopifnot(exprs = {
+    identical(colSumsC (z, na.rm=na),
+              colSums  (z, na.rm=na))
+    identical(colMeansC(z, na.rm=na),
+              colMeans (z, na.rm=na))
+    identical(rowSumsC (z, na.rm=na),
+              rowSums  (z, na.rm=na))
+    identical(rowMeansC(z, na.rm=na),
+              rowMeans (z, na.rm=na))
+    identical(sum(colSums(z, na.rm=na)), sum(z, na.rm=na) -> sz)
+    identical(sum(rowSums(z, na.rm=na)), sz)
+  })
+## almost all differed in R <= 4.5.1
+
+
+## Ben Bolker + Kasper Kri...'s  PR#18946 -- lbeta(<complex>, *)
+(Lb <- list(
+    b1 = tryCid(  beta(1i, 1) )
+  , b2 = tryCid(  beta(1, 1i) )
+  , l1 = tryCid( lbeta(1i, 1) )
+  , l2 = tryCid( lbeta(1, 1i) )
+))
+stopifnot(vapply(Lb, inherits, what="error", NA))
+## l1 was not an error, but non-sense complex,  in R <= 4.5.1
+stopifnot(identical(log10(1i), log(1i, 10)), log2(c(1,2,4) + 0i) == 0:2)
+## (< 24h) lapsus "unimplemented complex fn."
+
+
+## pretty(<very small>, eps.correct=2) would produce huge vectors
+assertWarnV(pp <- .pretty(c(0, 1e-322), eps.correct = 2))
+str(pp)
+E <- 2e-314
+stopifnot(all.equal(list(l = -E, u = E, n = 2L), pp, tolerance = 1e-12))
+## n = 1112538 (Lnx 64b) in R <= 4.5.1  ^^^^^^
 
 
 
