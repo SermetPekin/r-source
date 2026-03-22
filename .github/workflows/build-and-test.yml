@@ -224,9 +224,8 @@ jobs:
 
       - name: Build
         shell: cmd
-        working-directory: src/gnuwin32
         run: |
-          make -j%NUMBER_OF_PROCESSORS%
+          %RTOOLS_HOME%\usr\bin\bash.exe -c "export PATH=/x86_64-w64-mingw32.static.posix/bin:/usr/bin:$PATH; cd src/gnuwin32 && make -j%NUMBER_OF_PROCESSORS%"
 
       - name: Verify R binary
         shell: bash
@@ -234,6 +233,6 @@ jobs:
 
       - name: Run tests
         shell: cmd
-        working-directory: src/gnuwin32
-        run: make check
+        run: |
+          %RTOOLS_HOME%\usr\bin\bash.exe -c "export PATH=/x86_64-w64-mingw32.static.posix/bin:/usr/bin:$PATH; cd src/gnuwin32 && make check"
         timeout-minutes: 60
